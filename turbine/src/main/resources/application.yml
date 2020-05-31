@@ -1,0 +1,21 @@
+server:
+  port: 2002
+
+spring:
+  application:
+    #在注册中心的项目名
+    name: turbine
+
+eureka:
+  client:
+    register-with-eureka: true
+    fetch-registry: true
+    serviceUrl:
+      #注册中心地址,default-zone: http://${name}:${password}@localhost:1111/eureka/
+      defaultZone: http://localhost:1111/eureka/
+
+turbine:
+  #监控的服务列表
+  app-config: spring-cloud-app-api
+  cluster-name-expression: new String('default')
+  combine-host-port: true

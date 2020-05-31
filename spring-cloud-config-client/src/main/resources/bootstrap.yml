@@ -1,0 +1,12 @@
+spring:
+  cloud:
+    config:
+      # 请求的具体分支，该demo使用master
+      label: master
+      # config server的地址
+      uri: http://localhost:9001
+      # 远程的具体配置文件，可以写多个，通过逗号隔开，
+      # 该demo使用 https://github.com/liyuan837/springcloud_demo/config-repo/gateway-test.properties，name配置文件前缀
+      name: gateway
+      # 使用哪个环境的配置，如dev、test、stage、prod
+      profile: test

@@ -1,0 +1,25 @@
+server:
+  port: 7001
+
+spring:
+  application:
+    #服务提供者在注册中心的项目名
+    name: spring-cloud-provider-user
+
+eureka:
+  client:
+    serviceUrl:
+      #注册中心地址,default-zone: http://${name}:${password}@localhost:1111/eureka/
+      defaultZone: http://localhost:1111/eureka/
+    #是否启用Eureka客户端，默认为true
+    enabled: true
+    #是否将自身的实例信息注册到eureka服务器默认为true
+    register-with-eureka: true
+    #是否从eureka服务器拉取注册信息
+    fetch-registry: true
+  instance:
+    #eureka客户端定义服务续约时间
+    lease-renewal-interval-in-seconds: 30
+    instance-id: ${spring.application.name}:${random.int}
+
+

@@ -1,0 +1,35 @@
+server:
+  port: 9001
+
+spring:
+  application:
+    #在注册中心的项目名
+    name: spring-cloud-config-server
+  cloud:
+    config:
+      server:
+        #配置存储信息的git仓库
+        git:
+          #配置文件只搜索url目录下的searchPaths
+          uri: https://github.com/liyuan837/springcloud_demo/
+         #指定搜索路径，如果有多个路径则使用,分隔
+          search-paths: config-repo
+          #对于使用git,svn做为后端配置，从远程库获取配置文件，需要存储到本地文件
+          basedir: config-repo/config-repo
+          username: 707335344@qq.com
+          password: 18260631810yuan
+          #配置中心通过git从远程git库，有时本地的拷贝被污染，这时配置中心无法从远程库更新本地配置,设置force-pull=true，则强制从远程库中更新本地库
+          force-pull: true
+
+eureka:
+  client:
+    serviceUrl:
+      #注册中心地址,default-zone: http://${name}:${password}@localhost:1111/eureka/
+      defaultZone: http://localhost:1111/eureka/
+    #是否启用Eureka客户端，默认为true
+    enabled: true
+    #是否将自身的实例信息注册到eureka服务器默认为true
+    register-with-eureka: true
+    #是否从eureka服务器拉取注册信息，作为服务消费者，这个是必须的
+    fetch-registry: true
+
