@@ -3,32 +3,38 @@
 #    active: server1
 server:
   port: 1111
-  hostname: eurekaServer1
+
+spring:
+  application:
+    #作为服务提供者在注册中心的项目名
+    name: eurekaServer1
+  # 安全认证的配置
+#  security:
+#    user:
+#      name: liyuan
+#      password: liyuan123456
 
 eureka:
   instance:
-    #eureka服务器的标识，如果是集群就可以写成 eurekaSer1,eurekaSer2,eurekuoduo aSer3..
-    hostname: ${server.hostname}
-    #服务失效时间，默认90s
+    # eureka服务器的标识，如果是集群就可以写成 eurekaServer1,eurekaServer2,eurekaServer3...
+    hostname: eurekaServer1
+    # 客户端配置：服务失效时间，默认90s
     lease-expiration-duration-in-seconds: 90
+    # 客户端配置：eureka客户端需要向eureka服务器发送心跳的频率，默认30s
+    lease-renewal-interval-in-seconds: 30
   client:
-    #registerWithEureka表示是否注册自身到eureka服务器，因为当前这个应用就是eureka服务器，没必要注册自身，所以这里是false
+    # registerWithEureka表示是否注册自身到eureka服务器，因为当前这个应用就是eureka服务器，没必要注册自身，所以这里是false
     registerWithEureka: false
-    #fetchRegistry表示是否从eureka服务器获取注册信息，同上，这里不需要。
+    # fetchRegistry表示是否从eureka服务器获取注册信息，同上，这里不需要。
     fetchRegistry: false
+    # 从eureka服务器获取注册表信息的频率，默认30s
+    registry-fetch-interval-seconds: 30
     #开启客户端存活状态监测
     healthcheck:
       enabled: true
     serviceUrl:
-      #defaultZone是设置eureka服务器所在的地址，查询服务和注册服务程序都注册到这个地址。
+      #defaultZone是设置eureka服务所在的地址，查询服务和注册服务程序都注册到这个地址。
       defaultZone: http://${eureka.instance.hostname}:${server.port}/eureka/
   server:
-    #关闭自我保护功能
+    # 服务端配置：关闭自我保护功能
     enable-self-preservation: false
-# 安全认证的配置
-#security:
-#  basic:
-#    enabled: true
-#  user:
-#    name: liyuan  # 用户名
-#    password: liyuan123456   # 用户密码
