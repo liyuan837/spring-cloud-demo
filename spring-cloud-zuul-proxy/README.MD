@@ -83,3 +83,4 @@
             }
     
         ```
+   4. 启动之后访问：（POST）localhost:8080/zuul/proxy/app-api/api/user/login?debug=1和（GET）localhost:8080/zuul/proxy/user-api/user/queryByName?debug=1&name=aa
