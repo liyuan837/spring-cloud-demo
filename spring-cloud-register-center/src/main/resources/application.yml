@@ -16,7 +16,7 @@ spring:
 
 eureka:
   instance:
-    # eureka服务器的标识，如果是集群就可以写成 eurekaServer1,eurekaServer2,eurekaServer3...
+    # 主机名，eureka服务器的标识，如果是集群就可以写成 eurekaServer1,eurekaServer2,eurekaServer3...
     hostname: eurekaServer1
     # 客户端配置：服务失效时间，默认90s
     lease-expiration-duration-in-seconds: 90
@@ -24,9 +24,9 @@ eureka:
     lease-renewal-interval-in-seconds: 30
   client:
     # registerWithEureka表示是否注册自身到eureka服务器，因为当前这个应用就是eureka服务器，没必要注册自身，所以这里是false
-    registerWithEureka: false
+    register-with-eureka: false
     # fetchRegistry表示是否从eureka服务器获取注册信息，同上，这里不需要。
-    fetchRegistry: false
+    fetch-registry: false
     # 从eureka服务器获取注册表信息的频率，默认30s
     registry-fetch-interval-seconds: 30
     #开启客户端存活状态监测
