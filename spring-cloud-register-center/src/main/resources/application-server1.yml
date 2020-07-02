@@ -31,7 +31,7 @@ eureka:
       enabled: true
     serviceUrl:
       #defaultZone是设置eureka服务所在的地址，如果是eureka集群部署，则这边的值是其他注册中心地址
-      defaultZone: http://localhost:1112/eureka/
+      defaultZone: http://eurekaServer2:1112/eureka/
   server:
     # 服务端配置：关闭自我保护功能
     enable-self-preservation: false
