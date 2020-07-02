@@ -23,3 +23,40 @@ SpringBoot项目，服务提供者，这里我们搭建的是一个双节点的�
     java -jar spring-cloud-provider-user-0.0.1-SNAPSHOT.jar --spring.profiles.active=server2
   
   4. 多集群运行，是为了方便后面spring-cloud-app-api中进行客户端负载均衡策略的测试
+
+* springboot自带的actuator监控
+  > actuator 提供了很多api（称为：节点），默认只开放了 health、info两个节点
+  >
+  > GET /autoconfig 查看自动配置的使用情况 true 
+  > GET /configprops 查看配置属性，包括默认配置 true 
+  > GET /beans 查看bean及其关系列表 true 
+  > GET /dump 打印线程栈 true 
+  > GET /env 查看所有环境变量 true 
+  > GET /env/{name} 查看具体变量值 true 
+  > GET /health 查看应用健康指标 false 
+  > GET /info 查看应用信息 false 
+  > GET /mappings 查看所有url映射 true 
+  > GET /metrics 查看应用基本指标 true 
+  > GET /metrics/{name} 查看具体指标 true 
+  > POST /shutdown 关闭应用 true 
+  > GET /trace 查看基本追踪信息 true 
+  >
+  > 更多关于actuator的内容请参考：https://docs.spring.io/spring-boot/docs/current-SNAPSHOT/reference/htmlsingle/#production-ready-endpoints
+  1. 需引入actuator依赖
+    ```
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-actuator</artifactId>
+        </dependency>
+    ```
+  2. 至于启用方式，springboot2.0改动比较大，需在配置文件中添加
+    ```yaml
+        management:
+          endpoints:
+            web:
+              # Web端点的基本路径,默认为/actuator
+              base-path: /actuator
+              # 默认只开放health,info端点  用*可以包含全部端点
+              exposure:
+                include: "*"
+    ```
