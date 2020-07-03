@@ -32,6 +32,7 @@
         <module>spring-cloud-config-server</module>
         <module>spring-cloud-config-client</module>
         <module>spring-cloud-zuul-proxy</module>
+        <module>spring-cloud-bus-amqp</module>
     </modules>
 
     <dependencies>

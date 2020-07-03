@@ -35,12 +35,10 @@
         ```
     
     4. 访问方式：
-           http://localhost:9001/gateway/prod/master
-           http://localhost:9001/{配置文件名前缀}/{配置文件版本}/git分支名
-       
-           或
-           
-           http://localhost:9001/gateway-test.properties
-           http://localhost:9001/{配置文件名称}
+       - http://localhost:9001/gateway/prod/master
+          - http://localhost:9001/{配置文件名前缀}/{配置文件版本}/git分支名
+          - 比如：gateway-dev.properties的配置文件前缀就市gateway
+       - http://localhost:9001/gateway-test.properties
+          - http://localhost:9001/{配置文件名称}
     5. 注意：
         当我们更改了远程git仓库配置文件信息时，注册中心的数据会自动加载，所以当我们使用上面的访问方式访问时，能实时拿到最新配置数据

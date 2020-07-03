@@ -1,4 +1,10 @@
 spring:
+  # rabbitmq相关配置
+  rabbitmq:
+    host: localhost
+    port: 5672
+    username: guest
+    password: guest
   cloud:
     config:
       # 请求的具体分支，该demo使用master
@@ -10,3 +16,7 @@ spring:
       name: gateway
       # 使用哪个环境的配置，如dev、test、stage、prod
       profile: test
+      bus:
+        enabled: true
+        trace:
+          enabled: true
