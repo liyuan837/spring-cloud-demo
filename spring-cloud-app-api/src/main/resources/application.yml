@@ -21,7 +21,7 @@ eureka:
     # eureka客户端定义服务续约时间
     lease-renewal-interval-in-seconds: 30
     # instance-id: ${spring.application.name}:${random.int}
-    instance-id: ${spring.application.name}:${random.int}
+    # instance-id: ${spring.application.name}:${random.int}
   client:
     serviceUrl:
       # 注册中心地址,default-zone: http://${name}:${password}@localhost:1111/eureka/

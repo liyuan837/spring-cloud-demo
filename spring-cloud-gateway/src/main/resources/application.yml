@@ -1,0 +1,60 @@
+
+server:
+  port: 8084
+#  servlet:
+#    context-path: /gateway
+
+spring:
+  application:
+    name: spring-cloud-gateway
+  cloud:
+    # gateway模块的路由转发
+    gateway:
+      discovery:
+        locator:
+          # 是否和服务注册与发现组件结合，设置为 true 后可以直接使用应用名称调用服务
+          enabled: false
+          lowerCaseServiceId: true
+      routes:
+      - id: spring-cloud-app-api
+        # lb代表从注册中心获取服务
+        uri: lb://SPRING-CLOUD-APP-API
+        # 转发该路径
+        predicates:
+          - Path=/app-api/**
+        filters:
+          - StripPrefix=1
+      - id: spring-cloud-provider-user
+        uri: lb://SPRING-CLOUD-PROVIDER-USER
+        predicates:
+          - Path=/user-api/**
+        filters:
+          - StripPrefix=1
+
+eureka:
+  instance:
+    # eureka客户端定义服务续约时间
+    lease-renewal-interval-in-seconds: 30
+    instance-id: ${spring.application.name}:${random.int}
+  client:
+    register-with-eureka: true
+    fetch-registry: true
+    service-url:
+      defaultZone: http://localhost:1111/eureka/
+
+#SpringBoot2.1之后，项目启动时，控制台不自动打印api了，需要做如下配置：更改 org.springframework.web 包的日志级别
+logging:
+  level:
+    org.springframework.web: TRACE
+
+# 查看路由信息
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"
+
+
+
+
+
