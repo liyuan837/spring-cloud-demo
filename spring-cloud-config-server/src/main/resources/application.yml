@@ -1,3 +1,4 @@
+
 server:
   port: 9001
 
@@ -15,12 +16,14 @@ spring:
           # 指定搜索路径，如果有多个路径则使用,分隔
           search-paths: config-repo
           # 对于使用git,svn做为后端配置，从远程库获取配置文件，需要存储到本地文件
-          basedir: config-repo-temp
+          basedir: config-repo/config-repo
           # 如果是公开仓库，可以不配置账号密码
           username:
           password:
           # 配置中心通过git从远程git库，有时本地的拷贝被污染，这时配置中心无法从远程库更新本地配置,设置force-pull=true，则强制从远程库中更新本地库
           force-pull: true
+      # 分支
+      label: master
 
 eureka:
   instance:

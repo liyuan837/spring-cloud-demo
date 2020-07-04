@@ -8,6 +8,10 @@ spring:
   application:
     # 服务提供者在注册中心的项目名
     name: spring-cloud-app-api
+  # 如果后面引入zipkin链路追踪，则需要
+  zipkin:
+    base-url: http://localhost:9411
+    enabled: true
 
 eureka:
   instance:

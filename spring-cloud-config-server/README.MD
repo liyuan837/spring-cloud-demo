@@ -18,7 +18,29 @@
        ```
     2. 配置文件中配置git相关信息
         主要是配置git相关信息，以及将本服务作为eureka客户端注册到注册中心
-    
+        ```yaml
+           spring:
+             application:
+               # 在注册中心的项目名
+               name: spring-cloud-config-server
+             cloud:
+               config:
+                 server:
+                   # 配置存储信息的git仓库
+                   git:
+                     # 配置git仓库地址
+                     uri: https://github.com/liyuan837/spring-cloud-demo/
+                     # 指定搜索路径，如果有多个路径则使用,分隔
+                     search-paths: config-repo
+                     # 对于使用git,svn做为后端配置，从远程库获取配置文件，需要存储到本地文件
+                     basedir: config-repo/config-repo
+                     # 如果是公开仓库，可以不配置账号密码
+                     username:
+                     password:
+                     # 配置中心通过git从远程git库，有时本地的拷贝被污染，这时配置中心无法从远程库更新本地配置,设置force-pull=true，则强制从远程库中更新本地库
+                     force-pull: true
+                 label: master
+        ```
     3. 启动入口类添加config的相关注解
         ```java
            @SpringBootApplication
@@ -34,7 +56,7 @@
            }
         ```
     
-    4. 访问方式：
+    4. 访问方式：__
        - http://localhost:9001/gateway/prod/master
           - http://localhost:9001/{配置文件名前缀}/{配置文件版本}/git分支名
           - 比如：gateway-dev.properties的配置文件前缀就市gateway

@@ -5,6 +5,17 @@ spring:
   application:
     # 在注册中心的项目名
     name: spring-cloud-bus-amqp
+  # rabbitmq相关配置
+  rabbitmq:
+    host: localhost
+    port: 5672
+    username: guest
+    password: guest
+  cloud:
+    bus:
+      enabled: true
+      trace:
+        enabled: true
 
 eureka:
   instance:
