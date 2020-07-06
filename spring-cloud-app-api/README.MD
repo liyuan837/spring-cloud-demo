@@ -246,20 +246,373 @@ SpringBoot项目，服务消费者，消费spring-cloud-provider-user提供的�
        - DynamicServerListLoadBalancer继承BaseLoadBalancer
        - 关系如下：
             ![LoadBalancerClient.png](img/DynamicServerListLoadBalancer.png)
+       - 查看BaseLoadBalancer类，默认情况下，它实现了以下配置：
+            - IClientConfig ribbonClientConfig: DefaultClientConfigImpl配置
+            - IRule ribbonRule: RoundRobinRule 路由策略
+            - IPing ribbonPing: DummyPing
+            - ServerList ribbonServerList: ConfigurationBasedServerList
+            - ServerListFilter ribbonServerListFilter: ZonePreferenceServerListFilter
+            - ILoadBalancer ribbonLoadBalancer: ZoneAwareLoadBalancer
+       - IClientConfig
+            - IClientConfig 用于对客户端或者负载均衡的配置，它的默认实现类为DefaultClientConfigImpl
+       - IRule
+            - IRule用于复杂均衡的策略，它有三个方法，其中choose()是根据key 来获取server,setLoadBalancer()和getLoadBalancer()是用来设置和获取ILoadBalancer的
+            - 源码：
+                ```java
+                      public interface IRule {
+                          Server choose(Object var1);
+                      
+                          void setLoadBalancer(ILoadBalancer var1);
+                      
+                          ILoadBalancer getLoadBalancer();
+                      }
+                ```
+            - IRule有很多默认的实现类，这些实现类根据不同的算法和逻辑来处理负载均衡,Ribbon实现的IRule有以下：
+                - BestAvailableRule 选择最小请求数
+                - ClientConfigEnabledRoundRobinRule 轮询
+                - RandomRule 随机选择一个server
+                - RoundRobinRule 轮询选择server
+                - RetryRule 根据轮询的方式重试
+                - WeightedResponseTimeRule 根据响应时间去分配一个weight ，weight越低，被选择的可能性就越低
+                - ZoneAvoidanceRule 根据server的zone区域和可用性来轮询选择   
+            - IRule的实现类图
+                ![LoadBalancerClient.png](img/IRule.png)
+       -IPing
+            - IPing是用来想server发生”ping”，来判断该server是否有响应，从而判断该server是否可用
+            - 它只有一个isAlive()方法，它的源码如下:
+                ```java
+                      public interface IPing {
+                          boolean isAlive(Server var1);
+                      }
+                ```
+            - IPing的实现类有PingUrl、PingConstant、NoOpPing、DummyPing和NIWSDiscoveryPing，他们之间的关系如下：
+                ![LoadBalancerClient.png](img/IPing.png)
+                - PingUrl 真实的去ping 某个url，判断其是否alive
+                - PingConstant 固定返回某服务是否可用，默认返回true，即可用
+                - NoOpPing 不去ping,直接返回true,即可用
+                - DummyPing 直接返回true，并实现了initWithNiwsConfig方法
+                - NIWSDiscoveryPing，根据DiscoveryEnabledServer的InstanceInfo的InstanceStatus去判断，如果为InstanceStatus.UP，则为可用，否则不可用
+                
+       - ServerList
+            - ServerList是定义获取所有的server的注册列表信息的接口，它的代码如下：  
+                ```java
+                  public interface ServerList<T extends Server> {
+                  
+                      public List<T> getInitialListOfServers();
+                      public List<T> getUpdatedListOfServers();   
+                  
+                  }
+                ```
+       - ServerListFilter
+            - ServerListFilter接口，定义了可根据配置去过滤或者根据特性动态获取符合条件的server列表的方法，代码如下：
+                ```java
+                  public interface ServerListFilter<T extends Server> {
+                  
+                      public List<T> getFilteredListOfServers(List<T> servers);
+                  
+                  }
+                ```
+       - DynamicServerListLoadBalancer
+            - 再回过头来看DynamicServerListLoadBalancer的源码，它的构造函数中有个initWithNiwsConfig()方法
+            - 关键代码：
+                ```java
+                      public DynamicServerListLoadBalancer(IClientConfig clientConfig) {
+                              this.isSecure = false;
+                              this.useTunnel = false;
+                              this.serverListUpdateInProgress = new AtomicBoolean(false);
+                      
+                              class NamelessClass_1 implements UpdateAction {
+                                  NamelessClass_1() {
+                                  }
+                      
+                                  public void doUpdate() {
+                                      DynamicServerListLoadBalancer.this.updateListOfServers();
+                                  }
+                              }
+                      
+                              this.updateAction = new NamelessClass_1();
+                              this.initWithNiwsConfig(clientConfig);
+                          }
+                      
+                          public void initWithNiwsConfig(IClientConfig clientConfig) {
+                              try {
+                                  super.initWithNiwsConfig(clientConfig);
+                                  String niwsServerListClassName = clientConfig.getPropertyAsString(CommonClientConfigKey.NIWSServerListClassName, "com.netflix.loadbalancer.ConfigurationBasedServerList");
+                                  ServerList<T> niwsServerListImpl = (ServerList)ClientFactory.instantiateInstanceWithClientConfig(niwsServerListClassName, clientConfig);
+                                  this.serverListImpl = niwsServerListImpl;
+                                  if (niwsServerListImpl instanceof AbstractServerList) {
+                                      AbstractServerListFilter<T> niwsFilter = ((AbstractServerList)niwsServerListImpl).getFilterImpl(clientConfig);
+                                      niwsFilter.setLoadBalancerStats(this.getLoadBalancerStats());
+                                      this.filter = niwsFilter;
+                                  }
+                      
+                                  String serverListUpdaterClassName = clientConfig.getPropertyAsString(CommonClientConfigKey.ServerListUpdaterClassName, "com.netflix.loadbalancer.PollingServerListUpdater");
+                                  this.serverListUpdater = (ServerListUpdater)ClientFactory.instantiateInstanceWithClientConfig(serverListUpdaterClassName, clientConfig);
+                                  this.restOfInit(clientConfig);
+                              } catch (Exception var5) {
+                                  throw new RuntimeException("Exception while initializing NIWSDiscoveryLoadBalancer:" + clientConfig.getClientName() + ", niwsClientConfig:" + clientConfig, var5);
+                              }
+                          }
+                      
+                          void restOfInit(IClientConfig clientConfig) {
+                              boolean primeConnection = this.isEnablePrimingConnections();
+                              this.setEnablePrimingConnections(false);
+                              this.enableAndInitLearnNewServersFeature();
+                              this.updateListOfServers();
+                              if (primeConnection && this.getPrimeConnections() != null) {
+                                  this.getPrimeConnections().primeConnections(this.getReachableServers());
+                              }
+                      
+                              this.setEnablePrimingConnections(primeConnection);
+                              LOGGER.info("DynamicServerListLoadBalancer for client {} initialized: {}", clientConfig.getClientName(), this.toString());
+                          }
+              
+                          @VisibleForTesting
+                          public void updateListOfServers() {
+                              List<T> servers = new ArrayList();
+                              if (this.serverListImpl != null) {
+                                  servers = this.serverListImpl.getUpdatedListOfServers();
+                                  LOGGER.debug("List of Servers for {} obtained from Discovery client: {}", this.getIdentifier(), servers);
+                                  if (this.filter != null) {
+                                      servers = this.filter.getFilteredListOfServers((List)servers);
+                                      LOGGER.debug("Filtered List of Servers for {} obtained from Discovery client: {}", this.getIdentifier(), servers);
+                                  }
+                              }
+                      
+                              this.updateAllServerList((List)servers);
+                          }
+                ```
+            - 在initWithNiwsConfig()方法中，经过一系列的初始化配置，最终执行了restOfInit()方法，
+            - 在restOfInit()方法上，有一个 updateListOfServers()的方法，该方法是用来获取所有的ServerList的
+            - 进一步跟踪updateListOfServers()方法的源码，最终由serverListImpl.getUpdatedListOfServers()获取所有的服务列表的
+            - 而serverListImpl是ServerList接口的具体实现类。跟踪代码，ServerList的实现类为DiscoveryEnabledNIWSServerList，在ribbon-eureka.jar的com.netflix.niws.loadbalancer下
+            - DiscoveryEnabledNIWSServerList有 getInitialListOfServers()和getUpdatedListOfServers()方法，这两个方法都调用了obtainServersViaDiscovery()方法，源码如下：
+                ```java
+                          public List<DiscoveryEnabledServer> getInitialListOfServers() {
+                              return this.obtainServersViaDiscovery();
+                          }
+                      
+                          public List<DiscoveryEnabledServer> getUpdatedListOfServers() {
+                              return this.obtainServersViaDiscovery();
+                          }
+                          private List<DiscoveryEnabledServer> obtainServersViaDiscovery() {
+                              List<DiscoveryEnabledServer> serverList = new ArrayList();
+                              if (this.eurekaClientProvider != null && this.eurekaClientProvider.get() != null) {
+                                  EurekaClient eurekaClient = (EurekaClient)this.eurekaClientProvider.get();
+                                  if (this.vipAddresses != null) {
+                                      String[] var3 = this.vipAddresses.split(",");
+                                      int var4 = var3.length;
+                      
+                                      for(int var5 = 0; var5 < var4; ++var5) {
+                                          String vipAddress = var3[var5];
+                                          List<InstanceInfo> listOfInstanceInfo = eurekaClient.getInstancesByVipAddress(vipAddress, this.isSecure, this.targetRegion);
+                                          Iterator var8 = listOfInstanceInfo.iterator();
+                      
+                                          while(var8.hasNext()) {
+                                              InstanceInfo ii = (InstanceInfo)var8.next();
+                                              if (ii.getStatus().equals(InstanceStatus.UP)) {
+                                                  if (this.shouldUseOverridePort) {
+                                                      if (logger.isDebugEnabled()) {
+                                                          logger.debug("Overriding port on client name: " + this.clientName + " to " + this.overridePort);
+                                                      }
+                      
+                                                      InstanceInfo copy = new InstanceInfo(ii);
+                                                      if (this.isSecure) {
+                                                          ii = (new Builder(copy)).setSecurePort(this.overridePort).build();
+                                                      } else {
+                                                          ii = (new Builder(copy)).setPort(this.overridePort).build();
+                                                      }
+                                                  }
+                      
+                                                  DiscoveryEnabledServer des = this.createServer(ii, this.isSecure, this.shouldUseIpAddr);
+                                                  serverList.add(des);
+                                              }
+                                          }
+                      
+                                          if (serverList.size() > 0 && this.prioritizeVipAddressBasedServers) {
+                                              break;
+                                          }
+                                      }
+                                  }
+                      
+                                  return serverList;
+                              } else {
+                                  logger.warn("EurekaClient has not been initialized yet, returning an empty list");
+                                  return new ArrayList();
+                              }
+                          }
+                ```
+            - obtainServersViaDiscovery()是根据eurekaClientProvider.get()来获取EurekaClient，再根据EurekaClient来获取注册列表信息
+            - 其中eurekaClientProvider的实现类是LegacyEurekaClientProvider，它是一个获取eurekaClient类，通过静态的方法去获取eurekaClient，其代码如下：
+                ```java
+                  class LegacyEurekaClientProvider implements Provider<EurekaClient> {
+                      private volatile EurekaClient eurekaClient;
+                  
+                      LegacyEurekaClientProvider() {
+                      }
+                  
+                      public synchronized EurekaClient get() {
+                          if (this.eurekaClient == null) {
+                              this.eurekaClient = DiscoveryManager.getInstance().getDiscoveryClient();
+                          }
+                  
+                          return this.eurekaClient;
+                      }
+                  }
+                ```
+            - EurekaClient的实现类为DiscoveryClient，在之前已经分析了它具有服务注册、获取服务注册列表等的全部功能
+            - 由此可见，负载均衡器是从EurekaClient获取服务信息，并根据IRule去路由，并且根据IPing去判断服务的可用性
+            - 那么负载均衡器多久一次去获取一次从Eureka Client获取注册信息呢？
+                - 在BaseLoadBalancer类下，BaseLoadBalancer的构造函数，该构造函数开启了一个PingTask任务，setupPingTask()，源码如下：
+                    ```java
+                          void setupPingTask() {
+                              if (!this.canSkipPing()) {
+                                  if (this.lbTimer != null) {
+                                      this.lbTimer.cancel();
+                                  }
+                      
+                                  this.lbTimer = new ShutdownEnabledTimer("NFLoadBalancer-PingTimer-" + this.name, true);
+                                  this.lbTimer.schedule(new BaseLoadBalancer.PingTask(), 0L, (long)(this.pingIntervalSeconds * 1000));
+                                  this.forceQuickPing();
+                              }
+                          }
+                    ```
+            - 其中PingTask源码，即new一个Pinger对象，并执行runPinger()方法：
+                ```java
+                          class PingTask extends TimerTask {
+                              PingTask() {
+                              }
+                      
+                              public void run() {
+                                  try {
+                                      (BaseLoadBalancer.this.new Pinger(BaseLoadBalancer.this.pingStrategy)).runPinger();
+                                  } catch (Exception var2) {
+                                      BaseLoadBalancer.logger.error("LoadBalancer [{}]: Error pinging", BaseLoadBalancer.this.name, var2);
+                                  }
+                      
+                              }
+                          }
+                ```
+            - 查看Pinger的runPinger()方法，最终根据 pingerStrategy.pingServers(ping, allServers)来获取服务的可用性，如果该返回结果，如之前相同，则不去向EurekaClient获取注册列表，如果不同则通知ServerStatusChangeListener或者changeListeners发生了改变，进行更新或者重新拉取
+                ```java
+                      public void runPinger() throws Exception {
+                                  if (BaseLoadBalancer.this.pingInProgress.compareAndSet(false, true)) {
+                                      Server[] allServers = null;
+                                      boolean[] results = null;
+                                      Lock allLock = null;
+                                      Lock upLock = null;
+                      
+                                      try {
+                                          allLock = BaseLoadBalancer.this.allServerLock.readLock();
+                                          allLock.lock();
+                                          allServers = (Server[])BaseLoadBalancer.this.allServerList.toArray(new Server[BaseLoadBalancer.this.allServerList.size()]);
+                                          allLock.unlock();
+                                          int numCandidates = allServers.length;
+                                          boolean[] resultsx = this.pingerStrategy.pingServers(BaseLoadBalancer.this.ping, allServers);
+                                          List<Server> newUpList = new ArrayList();
+                                          List<Server> changedServers = new ArrayList();
+                      
+                                          for(int i = 0; i < numCandidates; ++i) {
+                                              boolean isAlive = resultsx[i];
+                                              Server svr = allServers[i];
+                                              boolean oldIsAlive = svr.isAlive();
+                                              svr.setAlive(isAlive);
+                                              if (oldIsAlive != isAlive) {
+                                                  changedServers.add(svr);
+                                                  BaseLoadBalancer.logger.debug("LoadBalancer [{}]:  Server [{}] status changed to {}", new Object[]{BaseLoadBalancer.this.name, svr.getId(), isAlive ? "ALIVE" : "DEAD"});
+                                              }
+                      
+                                              if (isAlive) {
+                                                  newUpList.add(svr);
+                                              }
+                                          }
+                      
+                                          upLock = BaseLoadBalancer.this.upServerLock.writeLock();
+                                          upLock.lock();
+                                          BaseLoadBalancer.this.upServerList = newUpList;
+                                          upLock.unlock();
+                                          BaseLoadBalancer.this.notifyServerStatusChangeListener(changedServers);
+                                      } finally {
+                                          BaseLoadBalancer.this.pingInProgress.set(false);
+                                      }
+                                  }
+                              }
+                          }
+                ```
+            - 由此可见，LoadBalancerClient是在初始化的时候，会向Eureka回去服务注册列表，并且向通过10s一次向EurekaClient发送“ping”，来判断服务的可用性，如果服务的可用性发生了改变或者服务数量和之前的不一致，则更新或者重新拉取。LoadBalancerClient有了这些服务注册列表，就可以根据具体的IRule来进行负载均衡
   4. RestTemplate是如何和Ribbon结合的
-    
+    > 为什么在RestTemplate加一个@LoadBalance注解就可可以开启负载均衡呢？
+    - 找到类LoadBalancerAutoConfiguration，即LoadBalancer自动配置类，部分源码如下：
+        ```java
+          @Configuration(
+              proxyBeanMethods = false
+          )
+          @ConditionalOnClass({RestTemplate.class})
+          @ConditionalOnBean({LoadBalancerClient.class})
+          @EnableConfigurationProperties({LoadBalancerRetryProperties.class})
+          public class LoadBalancerAutoConfiguration {
+              @LoadBalanced
+              @Autowired(
+                  required = false
+              )
+              private List<RestTemplate> restTemplates = Collections.emptyList();
+              @Bean
+              public SmartInitializingSingleton loadBalancedRestTemplateInitializerDeprecated(final ObjectProvider<List<RestTemplateCustomizer>> restTemplateCustomizers) {
+                  return () -> {
+                      restTemplateCustomizers.ifAvailable((customizers) -> {
+                          Iterator var2 = this.restTemplates.iterator();
+          
+                          while(var2.hasNext()) {
+                              RestTemplate restTemplate = (RestTemplate)var2.next();
+                              Iterator var4 = customizers.iterator();
+          
+                              while(var4.hasNext()) {
+                                  RestTemplateCustomizer customizer = (RestTemplateCustomizer)var4.next();
+                                  customizer.customize(restTemplate);
+                              }
+                          }
+          
+                      });
+                  };
+              }
+              @Configuration(
+                  proxyBeanMethods = false
+              )
+              @ConditionalOnMissingClass({"org.springframework.retry.support.RetryTemplate"})
+              static class LoadBalancerInterceptorConfig {
+                  LoadBalancerInterceptorConfig() {
+                  }
+          
+                  @Bean
+                  public LoadBalancerInterceptor ribbonInterceptor(LoadBalancerClient loadBalancerClient, LoadBalancerRequestFactory requestFactory) {
+                      return new LoadBalancerInterceptor(loadBalancerClient, requestFactory);
+                  }
+          
+                  @Bean
+                  @ConditionalOnMissingBean
+                  public RestTemplateCustomizer restTemplateCustomizer(final LoadBalancerInterceptor loadBalancerInterceptor) {
+                      return (restTemplate) -> {
+                          List<ClientHttpRequestInterceptor> list = new ArrayList(restTemplate.getInterceptors());
+                          list.add(loadBalancerInterceptor);
+                          restTemplate.setInterceptors(list);
+                      };
+                  }
+              }
+          }
+        ```
+    - 在该类中，首先维护了一个被@LoadBalanced修饰的RestTemplate对象的List，在初始化的过程中，通过调用customizer.customize(restTemplate)方法来给RestTemplate增加拦截器LoadBalancerInterceptor
+    - 而LoadBalancerInterceptor，用于实时拦截，在LoadBalancerInterceptor这里实现来负载均衡。LoadBalancerInterceptor的拦截方法如下:
+        ```java
+              public ClientHttpResponse intercept(final HttpRequest request, final byte[] body, final ClientHttpRequestExecution execution) throws IOException {
+                  URI originalUri = request.getURI();
+                  String serviceName = originalUri.getHost();
+                  Assert.state(serviceName != null, "Request URI does not contain a valid hostname: " + originalUri);
+                  return (ClientHttpResponse)this.loadBalancer.execute(serviceName, this.requestFactory.createRequest(request, body, execution));
+              }
+        ``` 
   5. 总结
-  
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
+    - Ribbon的负载均衡，主要通过LoadBalancerClient来实现的
+    - 而LoadBalancerClient具体交给了ILoadBalancer来处理
+    - ILoadBalancer通过配置IRule、IPing等信息，并向EurekaClient获取注册列表的信息，并默认10秒一次向EurekaClient发送“ping”,进而检查是否更新服务列表
+    - 最后，得到注册列表后，ILoadBalancer根据IRule的策略进行负载均衡
+    - 而RestTemplate 被@LoadBalance注解后，能过用负载均衡，主要是维护了一个被@LoadBalance注解的RestTemplate列表，并给列表中的RestTemplate添加拦截器，进而交给负载均衡器去处理
