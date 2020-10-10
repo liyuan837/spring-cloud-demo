@@ -48,14 +48,23 @@ Eureka提供的服务端，这里我们搭建的是一个双节点的服务注�
   4. 注意点：当关闭安全认证之后，需在ideal中重新刷新一下右侧的maven依赖，否则springsecurity依赖存在缓存
 
 ### 四、其他一些注册中心(https://blog.csdn.net/qq_19467623/article/details/96444902)
-  1. consul
-  2. nacos
-  3. zookeeper
- 
-
+1. consul
+2. nacos
+3. zookeeper
+1. 在分布式领域有个CAP定理（布鲁尔定理），它指出对于一个分布式计算系统来说，不可能同时满足以下3点：
+    - 一致性（Consistency）：同一个数据在集群中的所有节点，同一时刻是否都是同样的值
+    - 可用性（Availability）：集群中一部分节点故障后，集群整体是否还能处理客户端的请求
+    - 分区容忍性（Partition tolerance）：以实际效果而言，分区相当于对通信的时限要求。系统如果不能在时限内达成数据一致性，就意味着发生了分区的情况，必须就当前操作在C和A之间做出选择
+2. 常见的注册中心选择
+    - Zookeeper和Consul ：CP设计，保证了一致性，集群搭建的时候，某个节点失效，则会进行选举新的leader，或者半数以上节点不可用，则无法提供服务，因此可用性没法满足
+    - Eureka：AP原则，无主从节点，一个节点挂了，自动切换其他节点可以使用，去中心化
+3. 选择
+    - 一般对一致性要求较高的领域，比如金融领域，可以选用zookeeper/consul
+    - 对可用性较高的领域，比如电商领域，一般选用eureka
+    
+    
 ### 五、Eureka源码学习
-  1. *eureka相关概念
-     
+  1. eureka相关概念
         - **Register：服务注册**
           - 当Eureka客户端向Eureka Server注册时，它提供自身的元数据，比如IP地址、端口，运行状况指示符URL，主页等
         - **Renew：服务续约（客户端配置）**
@@ -106,20 +115,17 @@ Eureka提供的服务端，这里我们搭建的是一个双节点的服务注�
 
             ```
                 boolean register() throws Throwable {
-                    logger.info("DiscoveryClient_{}: registering service...", this.appPathIdentifier);
-            
-                    EurekaHttpResponse httpResponse;
+                    logger.info(PREFIX + "{}: registering service...", appPathIdentifier);
+                    EurekaHttpResponse<Void> httpResponse;
                     try {
-                        httpResponse = this.eurekaTransport.registrationClient.register(this.instanceInfo);
-                    } catch (Exception var3) {
-                        logger.warn("DiscoveryClient_{} - registration failed {}", new Object[]{this.appPathIdentifier, var3.getMessage(), var3});
-                        throw var3;
+                        httpResponse = eurekaTransport.registrationClient.register(instanceInfo);
+                    } catch (Exception e) {
+                        logger.warn(PREFIX + "{} - registration failed {}", appPathIdentifier, e.getMessage(), e);
+                        throw e;
                     }
-            
                     if (logger.isInfoEnabled()) {
-                        logger.info("DiscoveryClient_{} - registration status: {}", this.appPathIdentifier, httpResponse.getStatusCode());
+                        logger.info(PREFIX + "{} - registration status: {}", appPathIdentifier, httpResponse.getStatusCode());
                     }
-            
                     return httpResponse.getStatusCode() == Status.NO_CONTENT.getStatusCode();
                 }
             ```
@@ -127,41 +133,22 @@ Eureka提供的服务端，这里我们搭建的是一个双节点的服务注�
           - 在DiscoveryClient类继续追踪register()方法，它被InstanceInfoReplicator 类的run()方法调用，其中InstanceInfoReplicator实现了Runnable接口，run()方法代码如下：
 
             ```
-             public void run() {
-                    boolean var6 = false;
+                public void run() {
+                    try {
+                        discoveryClient.refreshInstanceInfo();
             
-                    ScheduledFuture next;
-                    label53: {
-                        try {
-                            var6 = true;
-                            this.discoveryClient.refreshInstanceInfo();
-                            Long dirtyTimestamp = this.instanceInfo.isDirtyWithTime();
-                            if (dirtyTimestamp != null) {
-                            	// 我在这里
-                                this.discoveryClient.register();
-                                this.instanceInfo.unsetIsDirty(dirtyTimestamp);
-                                var6 = false;
-                            } else {
-                                var6 = false;
-                            }
-                            break label53;
-                        } catch (Throwable var7) {
-                            logger.warn("There was a problem with the instance info replicator", var7);
-                            var6 = false;
-                        } finally {
-                            if (var6) {
-                                ScheduledFuture next = this.scheduler.schedule(this, (long)this.replicationIntervalSeconds, TimeUnit.SECONDS);
-                                this.scheduledPeriodicRef.set(next);
-                            }
+                        Long dirtyTimestamp = instanceInfo.isDirtyWithTime();
+                        if (dirtyTimestamp != null) {
+                            //我在这里
+                            discoveryClient.register();
+                            instanceInfo.unsetIsDirty(dirtyTimestamp);
                         }
-            
-                        next = this.scheduler.schedule(this, (long)this.replicationIntervalSeconds, TimeUnit.SECONDS);
-                        this.scheduledPeriodicRef.set(next);
-                        return;
+                    } catch (Throwable t) {
+                        logger.warn("There was a problem with the instance info replicator", t);
+                    } finally {
+                        Future next = scheduler.schedule(this, replicationIntervalSeconds, TimeUnit.SECONDS);
+                        scheduledPeriodicRef.set(next);
                     }
-            
-                    next = this.scheduler.schedule(this, (long)this.replicationIntervalSeconds, TimeUnit.SECONDS);
-                    this.scheduledPeriodicRef.set(next);
                 }
             ```
 
