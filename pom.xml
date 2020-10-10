@@ -55,6 +55,7 @@
             </exclusions>
         </dependency>
 
+        <!--引入公共的lombok-->
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
