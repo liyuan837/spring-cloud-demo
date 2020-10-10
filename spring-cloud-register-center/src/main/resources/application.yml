@@ -18,10 +18,6 @@ eureka:
   instance:
     # 主机名，eureka服务器的标识，如果是集群就可以写成 eurekaServer1,eurekaServer2,eurekaServer3...
     hostname: eurekaServer1
-    # 客户端配置：服务失效时间，默认90s
-    lease-expiration-duration-in-seconds: 90
-    # 客户端配置：eureka客户端需要向eureka服务器发送心跳的频率，默认30s
-    lease-renewal-interval-in-seconds: 30
   client:
     # registerWithEureka表示是否注册自身到eureka服务器，因为当前这个应用就是eureka服务器，没必要注册自身，所以这里是false
     register-with-eureka: false
@@ -36,5 +32,5 @@ eureka:
       #defaultZone是设置eureka服务所在的地址，查询服务和注册服务程序都注册到这个地址。
       defaultZone: http://${eureka.instance.hostname}:${server.port}/eureka/
   server:
-    # 服务端配置：关闭自我保护功能
+    # 服务端配置：关闭自我保护功能，以确保注册中心可以将不可用的实例正确剔除
     enable-self-preservation: false
