@@ -1,7 +1,7 @@
 
 # 说明
 
-## 本项目示例：服务注册中心
+## 本项目示例：Eureka服务注册中心
 Eureka提供的服务端，这里我们搭建的是一个双节点的服务注册中心集群
 
 ### 一、单注册中心运行方式（推荐使用）
@@ -13,14 +13,13 @@ Eureka提供的服务端，这里我们搭建的是一个双节点的服务注�
 	```
 
 ### 二、双集群注册中心运行方式
-1.首先运行package对项目进行打包，会在target目录下生成jar包
+1.首先运行package对项目进行打包，会在target目录下生成eureka-server.jar包
 
 2.再运行下面命令启动第一个注册中心：通过“http://localhost:1111/”可访问
-	java -jar spring-cloud-center-0.0.1-SNAPSHOT.jar --spring.profiles.active=server1
+   - java -jar eureka-server.jar --spring.profiles.active=server1
 
 3.然后运行下面命令启动第二个注册中心：通过“http://localhost:1112/”可访问
-
-​	java -jar spring-cloud-center-0.0.1-SNAPSHOT.jar --spring.profiles.active=server2
+   - java -jar eureka-server.jar --spring.profiles.active=server2
 
 ### 三、开启安全认证：
 1. 额外引入SpringSecurity依赖
@@ -44,8 +43,7 @@ Eureka提供的服务端，这里我们搭建的是一个双节点的服务注�
      ```
 
   3. 服务提供方进行注册时，需要使用：
-
-     http://${name}:${password}@localhost:1111/eureka/
+     - http://${name}:${password}@localhost:1111/eureka/
 
   4. 注意点：当关闭安全认证之后，需在ideal中重新刷新一下右侧的maven依赖，否则springsecurity依赖存在缓存
 
@@ -55,11 +53,11 @@ Eureka提供的服务端，这里我们搭建的是一个双节点的服务注�
      
         - **Register：服务注册**
           - 当Eureka客户端向Eureka Server注册时，它提供自身的元数据，比如IP地址、端口，运行状况指示符URL，主页等
-        - **Renew：服务续约**
-          - Eureka客户会每隔30秒发送一次心跳来续约。 通过续约来告知Eureka Server该Eureka客户仍然存在，没有出现问题
-          -  正常情况下，如果Eureka Server在90秒没有收到Eureka客户的续约，它会将实例从其注册表中删除。建议不要更改续约间隔
+        - **Renew：服务续约（客户端配置）**
+          - Eureka客户会每隔30秒发送一次心跳来续约。 通过续约来告知Eureka Server该Eureka客户仍然存在，没有出现问题（lease-renewal-interval-in-seconds）
+          - 正常情况下，如果Eureka Server在90秒没有收到Eureka客户的续约，它会将实例从其注册表中删除。建议不要更改续约间隔（lease-expiration-duration-in-seconds）
         - **Fetch Registries：获取注册列表信息** 
-          - Eureka客户端从服务器获取注册表信息，并将其缓存在本地
+          - Eureka客户端从服务器获取注册表信息，并将其缓存在本地（registry-fetch-interval-seconds）
           - 客户端会使用该信息查找其他服务，从而进行远程调用。该注册列表信息定期（每30秒钟）更新一次
           - 每次返回注册列表信息可能与Eureka客户端的缓存信息不同， Eureka客户端自动处理。
           - 如果由于某种原因导致注册列表信息不能及时匹配，Eureka客户端则会重新获取整个注册表信息。
