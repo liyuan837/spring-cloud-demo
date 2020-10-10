@@ -16,12 +16,13 @@
     <description>Demo project for Spring Cloud Register Center</description>
 
     <dependencies>
+        <!--注册中心只需要引入spring-boot-starter，无需web-->
         <dependency>
             <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-web</artifactId>
+            <artifactId>spring-boot-starter</artifactId>
         </dependency>
 
-        <!--注册Eureka服务发现组件 -->
+        <!--注册eureka-server服务发现组件 -->
         <dependency>
             <groupId>org.springframework.cloud</groupId>
             <artifactId>spring-cloud-starter-netflix-eureka-server</artifactId>
@@ -52,6 +53,7 @@
     </dependencyManagement>
 
     <build>
+        <finalName>eureka-server</finalName>
         <plugins>
             <plugin>
                 <groupId>org.springframework.boot</groupId>
