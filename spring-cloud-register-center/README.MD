@@ -99,7 +99,9 @@ Eureka提供的服务端，这里我们搭建的是一个双节点的服务注�
           - 来自任何区域的Eureka Client都可以查找注册表信息（每30秒发生一次）
           - Application Client可以远程调用Application Service来消费服务
 
-  3. Register注册服务
+  3. eureka-core核心包中LeaseManager接口定义了服务注册（register）、续约（renew）、取消（cancel）和剔除（evict）的方法
+  
+  4. Register注册服务
 
         - 服务注册，即Eureka Client向Eureka Server提交自己的服务信息，包括IP地址、端口、service ID等信息【如果Eureka Client没有写service ID，则默认为 ${spring.application.name}】
 
@@ -369,7 +371,7 @@ Eureka提供的服务端，这里我们搭建的是一个双节点的服务注�
                 }
             ```
 
-  4. Renew服务续约
+  5. Renew服务续约
 
         - 服务续约和服务注册非常类似，通过之前的分析可以知道，服务注册在Eureka Client程序启动之后开启，并同时开启服务续约的定时任务
 
@@ -444,7 +446,7 @@ Eureka提供的服务端，这里我们搭建的是一个双节点的服务注�
           - eureka.instance.leaseRenewalIntervalInSeconds
           - eureka.instance.leaseExpirationDurationInSeconds
 
-5. Eureka Client注册一个实例为什么这么慢
+ 6. Eureka Client注册一个实例为什么这么慢
 
    - Eureka Client一启动（不是启动完成），不是立即向Eureka Server注册，它有一个延迟向服务端注册的时间，通过跟踪源码，可以发现默认的延迟时间为40秒，源码在eureka-client-1.6.2.jar的DefaultEurekaClientConfig类下，代码如下：
 
@@ -464,6 +466,6 @@ Eureka提供的服务端，这里我们搭建的是一个双节点的服务注�
 
    - 综上几个因素，一个新注册的实例，特别是启动较快的实例（默认延迟40秒注册），不能马上被Eureka Server发现。另外，刚注册的Eureka Client也不能立即被其他服务调用，因为调用方因为各种缓存没有及时的获取到新的注册列表
 
-6. Eureka 的自我保护模式
+ 7. Eureka 的自我保护模式
       - 当一个新的Eureka Server出现时，它尝试从相邻节点获取所有实例注册表信息。如果从Peer节点获取信息时出现问题，Eureka Serve会尝试其他的Peer节点。如果服务器能够成功获取所有实例，则根据该信息设置应该接收的更新阈值。如果有任何时间，Eureka Serve接收到的续约低于为该值配置的百分比（默认为15分钟内低于85％），则服务器开启自我保护模式，即不再剔除注册列表的信息
       - 这样做的好处就是，如果是Eureka Server自身的网络问题，导致Eureka Client的续约不上，Eureka Client的注册列表信息不再被删除，也就是Eureka Client还可以被其他服务消费
