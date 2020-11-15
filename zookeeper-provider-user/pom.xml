@@ -9,10 +9,10 @@
         <relativePath/>
     </parent>
     <groupId>com.liyuan</groupId>
-    <artifactId>spring-cloud-provider-user</artifactId>
+    <artifactId>zookeeper-provider-user</artifactId>
     <version>0.0.1-SNAPSHOT</version>
     <packaging>jar</packaging>
-    <name>spring-cloud-provider-user</name>
+    <name>zookeeper-provider-user</name>
     <description>Demo project for Spring Cloud Provider User</description>
 
     <properties>
@@ -25,7 +25,8 @@
             <groupId>com.liyuan</groupId>
             <artifactId>common-beans</artifactId>
             <version>0.0.1-SNAPSHOT</version>
-            <scope>compile</scope>
+            <scope>system</scope>
+            <systemPath>${project.basedir}/lib/common-beans-0.0.1-SNAPSHOT.jar</systemPath>
         </dependency>
 
         <dependency>
