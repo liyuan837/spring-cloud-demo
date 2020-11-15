@@ -14,7 +14,7 @@ SpringBoot项目，服务消费者，消费spring-cloud-provider-user提供的�
             ribbon:
               NFLoadBalancerRuleClassName: com.netflix.loadbalancer.RandomRule
         ```
-    - javaBean方式：
+    - javaBean方式1：只能全局一种策略
         ```java
               //更换客户端负载均衡策略，也可以在配置文件中指定服务的负载均衡策略
               @Bean
@@ -22,6 +22,22 @@ SpringBoot项目，服务消费者，消费spring-cloud-provider-user提供的�
                   return new RandomRule();
               }
         ```
+    - JavaBean方式2：个性化方式，针对不同的服务提供者可配置不同的策略
+        ```java
+          // 定义一个策略配置类
+          @Configuration
+          public class RibbonRoundRule {
+          
+              //更换客户端负载均衡策略，也可以在配置文件中指定服务的负载均衡策略
+              @Bean
+              public IRule iRule(){
+                  return new RoundRobinRule();
+              }
+          
+          }
+        ```
+        然后，在启动类上面加上注解 `
+@RibbonClient(name = "spring-cloud-provider-user",configuration = RibbonRoundRule.class)`，并且使用@LoadBalanced注解在RestTemplate的Bean上即可
   - 较底层的服务如果出现故障，会导致连锁故障。当对特定的服务的调用的不可用达到一个阀值（Hystrix是5秒20次）断路器将会被打开,断路打开后，可用避免连锁故障，fallback方法可以直接返回一个固定值
   - Hystrix熔断器配置主要通过@HystrixCommand注解实现，通过设置fallback方法来进行熔断降低
      
@@ -70,8 +86,7 @@ SpringBoot项目，服务消费者，消费spring-cloud-provider-user提供的�
         }
     ```
   3. 需要配合微服务spring-cloud-provider-user集群部署，然后多次访问本服务，看是否能实现特定策略的负载均衡，对于熔断器测试，只需shutdown一个user服务，然后在请求，会执行快速失败，直接返回fallback结果，而不是等待响应超时，这很好的控制了容器的线程阻塞
-  
-  
+
 * ribbon源码学习
   1. 什么是ribbon?
     - Ribbon是`Netflix`公司开源的一个负载均衡的项目，是一个客户端负载均衡器，运行在客户端上，这边所谓的客户端，是针对于服务提供者来说，服务调用者就是客户端
@@ -105,7 +120,7 @@ SpringBoot项目，服务消费者，消费spring-cloud-provider-user提供的�
         ```
   3. 深入理解ribbon
     - LoadBalanceClient
-       - 在Riibon中一个非常重要的组件为LoadBalancerClient，它作为负载均衡的一个客户端
+       - 在Ribon中一个非常重要的组件为LoadBalancerClient，它作为负载均衡的一个客户端
        - 存放在spring-cloud-commons包下，LoadBalancerClient是一个接口，它继承ServiceInstanceChooser，它的实现类是RibbonLoadBalancerClient
        - 三者关系如下：
             ![LoadBalancerClient.png](img/LoadBalancerClient.png)
