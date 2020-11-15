@@ -4,7 +4,7 @@ import com.liyuan.demo.exception.BusinessException;
 import com.liyuan.demo.req.UserLoginDto;
 import com.liyuan.demo.res.BaseResVo;
 import com.liyuan.demo.rest.UserRest;
-import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 

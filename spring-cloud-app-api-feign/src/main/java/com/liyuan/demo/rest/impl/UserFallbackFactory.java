@@ -25,15 +25,6 @@ public class UserFallbackFactory implements FallbackFactory<UserRest> {
                         .resMsg("用户服务不可用")
                         .build();
             }
-
-            @Override
-            public BaseResVo queryByIdsss(Integer id, String authorization) {
-                log.error("用户服务不可用，throwable={}",throwable);
-                return BaseResVo.builder().
-                        resCode(1005)
-                        .resMsg("用户服务不可用")
-                        .build();
-            }
         };
     }
 }

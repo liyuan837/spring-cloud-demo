@@ -5,9 +5,7 @@
 package com.liyuan.demo.rest.base;
 
 import com.alibaba.fastjson.JSON;
-import com.liyuan.demo.req.BaseReqDto;
 import com.liyuan.demo.res.BaseResVo;
-import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.MapUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpEntity;
