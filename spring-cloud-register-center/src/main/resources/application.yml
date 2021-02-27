@@ -18,8 +18,6 @@ eureka:
   instance:
     # 主机名，eureka服务器的标识，如果是集群就可以写成 eurekaServer1,eurekaServer2,eurekaServer3...
     hostname: eurekaServer1
-    # eureka服务端配置的续约间隔，默认90秒接收不到客户端的续约心跳，会将其实例从注册表中剔除
-    lease-expiration-duration-in-seconds: 90
   client:
     # registerWithEureka表示是否注册自身到eureka服务器，因为当前这个应用就是eureka服务器，没必要注册自身，所以这里是false
     register-with-eureka: true
