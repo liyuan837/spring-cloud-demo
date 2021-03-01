@@ -37,7 +37,7 @@ zuul:
   PreLogFilter:
     pre:
       disable: false
-  # 关闭默认路由配置
+  # 关闭默认路由配置，如果不关闭，那么上面配置的路由和默认路由都可以访问
   ignored-services: spring-cloud-provider-user,spring-cloud-app-api
 
 # 查看路由信息
