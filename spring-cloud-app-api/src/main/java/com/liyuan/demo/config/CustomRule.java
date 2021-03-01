@@ -57,8 +57,15 @@ public class CustomRule extends AbstractLoadBalancerRule {
 
             //[4] 若调用次数小于4次，一直调用可用服务列表中索引为 currentIndex 的服务
             if (total < 4) {
-                server = upList.get(currentIndex);
-                total++;
+                //这边做数组越界判断是为了防止，服务提供者如果一个下线了，那个这边的currentIndex可能会取到不存在的服务
+                if(upList.size() < currentIndex){
+                    server = upList.get(currentIndex);
+                    total++;
+                }else{
+                    currentIndex = currentIndex % upList.size();
+                    server = upList.get(currentIndex);
+                    total = 0;
+                }
             } else {
                 // 到了4次之后，服务列表中的索引值++，表示下一个调用下一个服务
                 total = 0;
