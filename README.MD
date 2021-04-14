@@ -9,3 +9,4 @@
 * spring-cloud-app-api：服务消费者，采用ribbon + hystrix + resttemplate实现
 * spring-cloud-app-api-feign：服务消费者，采用feign实现
 * spring-cloud-zuul-proxy：zuul网关
+  
